@@ -38,7 +38,7 @@ exports.getAllTours = async (req, res) => {
 exports.getTour = async (req, res) => {
   try {
     const tour = await Tour.findById(req.params.id);
-    if (tour.length)
+    if (!tour.length)
       return res.status(200).json({
         status: "success",
         requestCount: req.requestCount,
