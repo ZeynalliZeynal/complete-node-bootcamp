@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const slugify = require("slugify");
+const validator = require("validator");
 
 const tourSchema = new mongoose.Schema(
   {
@@ -13,6 +14,9 @@ const tourSchema = new mongoose.Schema(
       required: [true, "Name is required"],
       unique: true,
       trim: true,
+      maxLength: [40, "Name must have minimum 40 characters"],
+      minLength: [10, "Name must have maximum 10 characters"],
+      // validate: [validator.isAlpha, "Tour name must only contain characters"],
     },
     slug: {
       type: String,
@@ -29,10 +33,16 @@ const tourSchema = new mongoose.Schema(
       type: String,
       required: [true, "Difficulty is required"],
       trim: true,
+      enum: {
+        values: ["easy", "medium", "difficult"],
+        message: "Difficulty must be either easy, medium, or difficult",
+      },
     },
     ratingsAverage: {
       type: Number,
-      default: 0,
+      default: 1,
+      min: [1, "Rating must be minimum 1.0"],
+      max: [5, "Rating must be maximum 5.0"],
     },
     ratingsQuantity: {
       type: Number,
@@ -42,7 +52,16 @@ const tourSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Price is required"],
     },
-    discount: Number,
+    discount: {
+      type: Number,
+      validate: {
+        validator: function (value) {
+          //! this only points to current doc on new document creation
+          return value < this.price;
+        },
+        message: "Discount price ({VALUE}) must be below regular price",
+      },
+    },
     summary: {
       type: String,
       trim: true,
@@ -76,20 +95,20 @@ tourSchema.pre("save", function (next) {
   next();
 });
 
-// * document middleware
 // * We can run multiple same middlewares
-// tourSchema.pre("save", function (next) {
-//   console.log("Will save document...");
-//   next();
-// });
+/*
+tourSchema.pre("save", function (next) {
+  console.log("Will save document...");
+  next();
+});
 
-// tourSchema.post("save", function (doc, next) {
-//   console.log(doc);
-//   next();
-// });
+tourSchema.post("save", function (doc, next) {
+  console.log(doc);
+  next();
+});
+*/
 
 // * query middleware
-
 tourSchema.pre(/^find/, function (next) {
   this.find({ secretTour: { $ne: true } });
 
@@ -99,7 +118,17 @@ tourSchema.pre(/^find/, function (next) {
 
 tourSchema.post(/^find/, function (docs, next) {
   console.log(`Query took ${Date.now() - this.start} ms`);
-  console.log(docs);
+  next();
+});
+
+// * aggregation middleware
+tourSchema.pre("aggregate", function (next) {
+  this.pipeline().unshift({
+    $match: {
+      secretTour: { $ne: true },
+    },
+  });
+  console.log(this.pipeline());
   next();
 });
 
