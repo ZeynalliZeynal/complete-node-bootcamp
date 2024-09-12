@@ -22,6 +22,7 @@ app.use((req, res, next) => {
   requestCount += 1;
   req.requestTime = new Date().toISOString();
   req.requestCount = requestCount;
+  console.log(req.headers);
   next();
 });
 
