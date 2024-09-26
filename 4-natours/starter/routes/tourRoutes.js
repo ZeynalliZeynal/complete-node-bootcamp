@@ -11,12 +11,20 @@ router.route("/top-5").get(controller.aliasTopTours, controller.getAllTours);
 
 router
   .route("/")
-  .get(authController.protect, controller.getAllTours)
+  .get(
+    authController.protect,
+    authController.restrictTo("admin"),
+    controller.getAllTours,
+  )
   .post(controller.createTour);
 router
   .route("/:id")
   .get(controller.getTour)
   .patch(controller.updateTour)
-  .delete(controller.deleteTour);
+  .delete(
+    authController.protect,
+    authController.restrictTo("admin"),
+    controller.deleteTour,
+  );
 
 module.exports = router;
